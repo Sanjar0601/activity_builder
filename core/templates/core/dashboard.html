@@ -165,6 +165,49 @@
         </div>
     </div>
 </div>
+
+<div class="card mt-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Submitted Assignments</h5>
+    </div>
+    <div class="card-body">
+        {% if submitted_assignments %}
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Group</th>
+                            <th>Assignment</th>
+                            <th>Score</th>
+                            <th>Time Taken</th>
+                            <th>Security Violations</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in submitted_assignments %}
+                        <tr{% if entry.security_count > 0 %} class="table-warning"{% endif %}>
+                            <td>
+                                {{ entry.submission.student_name }}
+                                {% if entry.security_count > 0 %}
+                                <i class="bi bi-exclamation-triangle-fill text-warning ms-1" title="Security violations logged"></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.submission.group.name }}</td>
+                            <td>{{ entry.submission.assignment.title }}</td>
+                            <td>{{ entry.submission.score }}/{{ entry.submission.total_questions }}</td>
+                            <td>{{ entry.time_taken }}</td>
+                            <td>{{ entry.security_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No submitted assignments yet.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}

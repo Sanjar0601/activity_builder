@@ -257,6 +257,14 @@ class Submission(models.Model):
         default=0,
         verbose_name='Tab Lock Violations'
     )
+    score = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Score'
+    )
+    total_questions = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Total Questions'
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Created At'

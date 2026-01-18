@@ -3,7 +3,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from .models import Teacher, Group, Assignment, Subject, TeacherGroup
+from .models import Teacher, Group, Assignment, Subject, TeacherGroup, Submission
 
 
 def teacher_login(request):
@@ -77,12 +77,32 @@ def dashboard(request):
         Q(created_by=teacher) | Q(selected_by=teacher)
     ).distinct().order_by('-created_at')
     
+    completed_submissions = Submission.objects.filter(
+        assignment__created_by=teacher,
+        is_completed=True
+    ).select_related('assignment', 'group').order_by('-end_time')
+
+    submitted_assignments = []
+    for submission in completed_submissions:
+        time_taken = None
+        if submission.end_time:
+            duration = submission.end_time - submission.start_time
+            total_seconds = int(duration.total_seconds())
+            minutes, seconds = divmod(total_seconds, 60)
+            time_taken = f"{minutes}m {seconds}s"
+        submitted_assignments.append({
+            'submission': submission,
+            'security_count': len(submission.security_logs or []),
+            'time_taken': time_taken or 'N/A',
+        })
+
     context = {
         'teacher': teacher,
         'my_groups': my_groups,
         'all_groups': all_groups,
         'my_group_ids': my_group_ids,
         'my_assignments': my_assignments,
+        'submitted_assignments': submitted_assignments,
     }
     
     return render(request, 'core/dashboard.html', context)
