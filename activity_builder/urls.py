@@ -8,7 +8,7 @@ from ninja import NinjaAPI
 
 from django.shortcuts import redirect
 from core.api import router as core_router
-from core.views import student_entry_view, quiz_entry_view, quiz_questions, submit_quiz, leaderboard
+from core.views import student_entry_view, quiz_entry_view, quiz_questions, submit_quiz
 from core.auth_views import teacher_login, teacher_register, dashboard, public_library, add_assignment_to_list, add_group_to_list
 
 
@@ -42,7 +42,6 @@ urlpatterns = [
     path('quiz/<uuid:assignment_uuid>/entry/', quiz_entry_view, name='quiz_entry'),
     path('quiz/<uuid:assignment_uuid>/questions/', quiz_questions, name='quiz_questions'),
     path('quiz/<uuid:assignment_uuid>/submit/', submit_quiz, name='submit_quiz'),
-    path('quiz/<uuid:assignment_uuid>/leaderboard/', leaderboard, name='leaderboard'),
     
     # Root redirect
     path('', home_redirect, name='home'),

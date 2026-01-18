@@ -172,48 +172,12 @@ def submit_quiz(request, assignment_uuid):
     submission.total_questions = total_questions
     submission.save(update_fields=['is_completed', 'end_time', 'score', 'total_questions'])
 
-    request.session['completed_submission_id'] = submission.id
-    request.session['submission_id'] = submission.id
-    request.session.save()
-
-    return redirect('leaderboard', assignment_uuid=assignment_uuid)
-
-
-def leaderboard(request, assignment_uuid):
-    """
-    View to show leaderboard for an assignment's completed submissions.
-    """
-    assignment = get_object_or_404(Assignment, uuid=assignment_uuid)
-    submissions = Submission.objects.filter(
-        assignment=assignment,
-        is_completed=True
-    ).select_related('group')
-
-    leaderboard_entries = []
-    for submission in submissions:
-        time_taken_seconds = None
-        if submission.end_time:
-            duration = submission.end_time - submission.start_time
-            time_taken_seconds = int(duration.total_seconds())
-        leaderboard_entries.append({
-            'submission': submission,
-            'time_taken_seconds': time_taken_seconds if time_taken_seconds is not None else float('inf'),
-            'time_taken_display': f"{time_taken_seconds // 60}m {time_taken_seconds % 60}s" if time_taken_seconds is not None else 'N/A',
-        })
-
-    leaderboard_entries.sort(
-        key=lambda entry: (-entry['submission'].score, entry['time_taken_seconds'])
-    )
-
-    for index, entry in enumerate(leaderboard_entries, start=1):
-        entry['rank'] = index
-
-    current_submission_id = request.session.get('completed_submission_id') or request.session.get('submission_id')
+    request.session.pop('submission_id', None)
 
     context = {
-        'assignment': assignment,
-        'leaderboard_entries': leaderboard_entries,
-        'current_submission_id': current_submission_id,
+        'student_name': submission.student_name,
+        'score': score,
+        'total_questions': total_questions,
     }
 
-    return render(request, 'core/leaderboard.html', context)
+    return render(request, 'core/quiz_results.html', context)
