@@ -3,7 +3,6 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
-from itertools import groupby
 from .models import Teacher, Group, Assignment, Subject, TeacherGroup, Submission
 
 
@@ -81,36 +80,20 @@ def dashboard(request):
     completed_submissions = Submission.objects.filter(
         assignment__created_by=teacher,
         is_completed=True
-    ).select_related('assignment', 'group').order_by('assignment__title', 'group__name', 'student_name')
+    ).select_related('assignment', 'group').order_by('-end_time')
 
-    def format_time_taken(submission):
+    submitted_assignments = []
+    for submission in completed_submissions:
+        time_taken = None
         if submission.end_time:
             duration = submission.end_time - submission.start_time
             total_seconds = int(duration.total_seconds())
             minutes, seconds = divmod(total_seconds, 60)
-            return f"{minutes}m {seconds}s"
-        return 'N/A'
-
-    submitted_assignments = []
-    for assignment, assignment_submissions in groupby(completed_submissions, key=lambda item: item.assignment):
-        groups = []
-        assignment_submissions = list(assignment_submissions)
-        assignment_submissions.sort(key=lambda item: (item.group.name, item.student_name))
-        for group, group_submissions in groupby(assignment_submissions, key=lambda item: item.group):
-            students = []
-            for submission in group_submissions:
-                students.append({
-                    'submission': submission,
-                    'security_count': len(submission.security_logs or []),
-                    'time_taken': format_time_taken(submission),
-                })
-            groups.append({
-                'group': group,
-                'students': students,
-            })
+            time_taken = f"{minutes}m {seconds}s"
         submitted_assignments.append({
-            'assignment': assignment,
-            'groups': groups,
+            'submission': submission,
+            'security_count': len(submission.security_logs or []),
+            'time_taken': time_taken or 'N/A',
         })
 
     context = {
