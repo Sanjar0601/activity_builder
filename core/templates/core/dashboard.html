@@ -1,0 +1,199 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Dashboard - Activity Builder{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-speedometer2"></i> My Dashboard</h1>
+    <a href="{% url 'admin:core_assignment_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Create New Assignment
+    </a>
+</div>
+
+<!-- Quick Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ my_groups.count }}</h3>
+                <p class="text-muted mb-0">My Groups</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ my_assignments.count }}</h3>
+                <p class="text-muted mb-0">Total Assignments</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">{{ my_assignments|length }}</h3>
+                <p class="text-muted mb-0">Active Assignments</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- My Groups Column -->
+    <div class="col-lg-6 col-md-12">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-people"></i> My Groups</h5>
+            </div>
+            <div class="card-body">
+                {% if my_groups %}
+                    <div class="list-group">
+                        {% for group in my_groups %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-bold">{{ group.name }}</h6>
+                                <small class="text-muted">Subscribed</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">
+                                <i class="bi bi-check-circle"></i>
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-3">You haven't added any groups yet.</p>
+                        <a href="{% url 'admin:core_group_add' %}" class="btn btn-sm btn-outline-primary">
+                            Create a Group
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Available Groups Section -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Available Groups</h5>
+            </div>
+            <div class="card-body">
+                {% if all_groups %}
+                    <div class="list-group">
+                        {% for group in all_groups %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fw-bold">{{ group.name }}</h6>
+                            </div>
+                            {% if group.id in my_group_ids %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> Added
+                            </span>
+                            {% else %}
+                            <a href="{% url 'add_group' group.id %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add to My List
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <p class="mb-0">No groups available in the system.</p>
+                        <a href="{% url 'admin:core_group_add' %}" class="btn btn-sm btn-outline-primary mt-2">
+                            Create First Group
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- My Assignments Column -->
+    <div class="col-lg-6 col-md-12">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-journal-text"></i> My Assignments</h5>
+            </div>
+            <div class="card-body">
+                {% if my_assignments %}
+                    <div class="list-group">
+                        {% for assignment in my_assignments %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'admin:core_assignment_change' assignment.id %}" class="text-decoration-none">
+                                            {{ assignment.title }}
+                                        </a>
+                                    </h6>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-calendar"></i> Available: {{ assignment.available_on }}<br>
+                                        <i class="bi bi-clock"></i> Duration: {{ assignment.duration }} min
+                                        {% if assignment.subject %}
+                                        <br><i class="bi bi-bookmark"></i> {{ assignment.subject.name }}
+                                        {% endif %}
+                                    </div>
+                                    {% if assignment.created_by == user %}
+                                    <span class="badge bg-info mt-2">Created by me</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary mt-2">From Library</span>
+                                    {% endif %}
+                                </div>
+                                <div class="ms-2">
+                                    <button onclick="copyLink('{{ assignment.uuid }}')" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-clipboard"></i> Copy Link
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-journal" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No assignments yet</p>
+                        <a href="{% url 'admin:core_assignment_add' %}" class="btn btn-sm btn-outline-success">
+                            Create an Assignment
+                        </a>
+                        <a href="{% url 'library' %}" class="btn btn-sm btn-outline-primary">
+                            Browse Library
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyLink(uuid) {
+        // Construct the full URL
+        const protocol = window.location.protocol;
+        const host = window.location.host;
+        const url = `${protocol}//${host}/quiz/${uuid}/entry/`;
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Link copied!');
+        }, function(err) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                alert('Link copied!');
+            } catch (err) {
+                alert('Failed to copy link. Please copy manually: ' + url);
+            }
+            document.body.removeChild(textArea);
+        });
+    }
+</script>
+{% endblock %}

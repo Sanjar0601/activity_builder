@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Entry - {{ assignment.title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .assignment-title {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-start {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-start:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .info-text {
+            color: #666;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .modal-body {
+            margin-bottom: 25px;
+        }
+        
+        .modal-body p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .modal-body ul {
+            margin-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+        
+        .modal-body li {
+            margin-bottom: 8px;
+        }
+        
+        .warning-highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            color: #856404;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn-modal {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+        
+        .btn-confirm {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz Entry</h1>
+        <div class="assignment-title">{{ assignment.title }}</div>
+        
+        {% if not is_available %}
+        <div class="error-message">
+            This quiz is not available today. It will be available on {{ assignment.available_on }}.
+        </div>
+        {% endif %}
+        
+        {% if groups %}
+        <form id="entryForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="group">Select Your Group:</label>
+                <select id="group" name="group" required {% if not is_available %}disabled{% endif %}>
+                    <option value="">-- Select a Group --</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="student_name">Enter Your Name:</label>
+                <input 
+                    type="text" 
+                    id="student_name" 
+                    name="student_name" 
+                    placeholder="Your full name"
+                    required
+                    {% if not is_available %}disabled{% endif %}
+                >
+            </div>
+            
+            <button 
+                type="button" 
+                class="btn-start" 
+                id="startBtn"
+                {% if not is_available %}disabled{% endif %}
+                onclick="handleStartTest()"
+            >
+                Start Test
+            </button>
+            
+            <div class="loading" id="loading">
+                Starting quiz...
+            </div>
+            
+            <div class="info-text">
+                Duration: {{ assignment.duration }} minutes
+            </div>
+        </form>
+        {% else %}
+        <div class="error-message">
+            No groups are available for this quiz.
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Modal -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Important Warning</h2>
+            </div>
+            <div class="modal-body">
+                <p><strong>The test is timed. Fullscreen mode will be enabled.</strong></p>
+                <div class="warning-highlight">
+                    <strong>Security Notice:</strong> Leaving fullscreen or switching tabs will be logged as a violation.
+                </div>
+                <p>Please ensure:</p>
+                <ul>
+                    <li>You have a stable internet connection</li>
+                    <li>You will not switch tabs or exit fullscreen during the test</li>
+                    <li>You are ready to complete the test in one session</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn-modal btn-confirm" onclick="confirmStart()">Confirm & Start</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const assignmentUuid = '{{ assignment_uuid }}';
+        
+        function handleStartTest() {
+            const groupSelect = document.getElementById('group');
+            const studentName = document.getElementById('student_name');
+            
+            // Validate form
+            if (!groupSelect.value || !studentName.value.trim()) {
+                alert('Please select a group and enter your name.');
+                return;
+            }
+            
+            // Show modal
+            document.getElementById('warningModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('warningModal').style.display = 'none';
+        }
+        
+        function confirmStart() {
+            const groupId = document.getElementById('group').value;
+            const studentName = document.getElementById('student_name').value;
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('startBtn').disabled = true;
+            
+            // Close modal
+            closeModal();
+            
+            // Call API to start quiz
+            fetch(`/api/core/quiz/start/${assignmentUuid}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    student_name: studentName,
+                    group_id: parseInt(groupId)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.submission_id && data.submission_id > 0) {
+                    // Request fullscreen
+                    requestFullscreen();
+                } else {
+                    alert(data.message || 'Failed to start quiz. Please try again.');
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('startBtn').disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('startBtn').disabled = false;
+            });
+        }
+        
+        function requestFullscreen() {
+            const element = document.documentElement;
+            
+            // Standard method - modern browsers
+            if (element.requestFullscreen) {
+                element.requestFullscreen()
+                    .then(() => {
+                        console.log('Fullscreen mode activated successfully');
+                        redirectToQuestions();
+                    })
+                    .catch((err) => {
+                        alert('Fullscreen mode is required to start the test. Please allow fullscreen access and try again.');
+                        console.error('Fullscreen error:', err);
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('startBtn').disabled = false;
+                    });
+            }
+            // WebKit browsers (Safari, older Chrome)
+            else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+                setTimeout(() => {
+                    console.log('Fullscreen mode activated (WebKit)');
+                    redirectToQuestions();
+                }, 100);
+            }
+            // Firefox
+            else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+                setTimeout(() => {
+                    console.log('Fullscreen mode activated (Firefox)');
+                    redirectToQuestions();
+                }, 100);
+            }
+            // IE/Edge (legacy)
+            else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+                setTimeout(() => {
+                    console.log('Fullscreen mode activated (IE/Edge)');
+                    redirectToQuestions();
+                }, 100);
+            }
+            else {
+                alert('Fullscreen mode is not supported in your browser. Please use a modern browser to take this test.');
+                console.error('Fullscreen API not supported');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+        
+        function redirectToQuestions() {
+            // Redirect to questions page (to be implemented)
+            window.location.href = `/quiz/${assignmentUuid}/questions/`;
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('warningModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+        
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement || 
+                                  document.webkitFullscreenElement || 
+                                  document.mozFullScreenElement || 
+                                  document.msFullscreenElement);
+            
+            if (!isFullscreen) {
+                console.warn('Fullscreen mode exited');
+            }
+        }
+    </script>
+</body>
+</html>

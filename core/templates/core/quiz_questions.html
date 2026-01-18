@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz - {{ assignment.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .timer-container {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+        }
+        .timer.warning {
+            color: #ffc107;
+        }
+        .timer.danger {
+            color: #dc3545;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .question-card {
+            margin-bottom: 30px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+        .question-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+        }
+        .choice-item {
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .choice-item:hover {
+            background-color: #f8f9fa;
+            border-color: #667eea;
+        }
+        .choice-item.selected {
+            background-color: #e7f3ff;
+            border-color: #667eea;
+        }
+        .submit-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Timer -->
+        <div class="timer-container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ assignment.title }}</h4>
+                <div class="timer" id="timer">
+                    <i class="bi bi-clock"></i> <span id="timer-display">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions -->
+        <form id="quizForm" method="POST" action="#">
+            {% csrf_token %}
+            {% for question in questions %}
+            <div class="question-card">
+                <div class="question-header">
+                    <h5 class="mb-0">Question {{ forloop.counter }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead mb-4">{{ question.text }}</p>
+                    
+                    <div class="choices">
+                        {% for choice in question.choices.all %}
+                        <div class="choice-item" onclick="selectChoice({{ question.id }}, {{ choice.id }})">
+                            <input 
+                                type="radio" 
+                                name="question_{{ question.id }}" 
+                                id="choice_{{ choice.id }}" 
+                                value="{{ choice.id }}"
+                                style="display: none;"
+                            >
+                            <label for="choice_{{ choice.id }}" class="mb-0 w-100" style="cursor: pointer;">
+                                {{ choice.text }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <button type="button" class="btn btn-success btn-lg submit-btn" onclick="submitQuiz()">
+                <i class="bi bi-check-circle"></i> Submit Quiz
+            </button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const submissionId = {{ submission.id }};
+        const remainingMinutes = {{ remaining_minutes }};
+        let totalSeconds = remainingMinutes * 60;
+        let timerInterval;
+
+        // Initialize timer
+        function updateTimer() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.getElementById('timer-display').textContent = display;
+            
+            const timerEl = document.getElementById('timer');
+            if (totalSeconds <= 60) {
+                timerEl.classList.add('danger');
+                timerEl.classList.remove('warning');
+            } else if (totalSeconds <= 300) {
+                timerEl.classList.add('warning');
+                timerEl.classList.remove('danger');
+            } else {
+                timerEl.classList.remove('warning', 'danger');
+            }
+            
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                alert('Time is up! Submitting quiz...');
+                submitQuiz();
+            }
+            
+            totalSeconds--;
+        }
+
+        // Start timer
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+
+        // Select choice
+        function selectChoice(questionId, choiceId) {
+            // Uncheck all choices for this question
+            document.querySelectorAll(`input[name="question_${questionId}"]`).forEach(radio => {
+                radio.checked = false;
+                radio.closest('.choice-item').classList.remove('selected');
+            });
+            
+            // Check selected choice
+            const selectedRadio = document.getElementById(`choice_${choiceId}`);
+            selectedRadio.checked = true;
+            selectedRadio.closest('.choice-item').classList.add('selected');
+        }
+
+        // Anti-cheat: Detect visibility change and blur events
+        let violationLogged = false;
+
+        function logViolation() {
+            if (violationLogged) return; // Prevent multiple rapid violations
+            
+            violationLogged = true;
+            
+            fetch(`/api/core/quiz/violation/${submissionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.warn('Violation logged:', data);
+                violationLogged = false;
+            })
+            .catch(error => {
+                console.error('Error logging violation:', error);
+                violationLogged = false;
+            });
+        }
+
+        // Visibility change event (tab switch, minimize window, etc.)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                logViolation();
+            }
+        });
+
+        // Window blur event (focus lost)
+        window.addEventListener('blur', function() {
+            logViolation();
+        });
+
+        // Fullscreen exit detection
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement) {
+                logViolation();
+            }
+        });
+
+        document.addEventListener('webkitfullscreenchange', function() {
+            if (!document.webkitFullscreenElement) {
+                logViolation();
+            }
+        });
+
+        document.addEventListener('mozfullscreenchange', function() {
+            if (!document.mozFullScreenElement) {
+                logViolation();
+            }
+        });
+
+        document.addEventListener('MSFullscreenChange', function() {
+            if (!document.msFullscreenElement) {
+                logViolation();
+            }
+        });
+
+        // Submit quiz
+        function submitQuiz() {
+            if (confirm('Are you sure you want to submit the quiz? You cannot change your answers after submission.')) {
+                // TODO: Implement quiz submission
+                alert('Quiz submission will be implemented in the next step.');
+            }
+        }
+
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

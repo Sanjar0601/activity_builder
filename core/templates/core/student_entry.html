@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Entry - {{ assignment.title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .assignment-title {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+            color: #856404;
+        }
+        
+        .warning-box strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .warning-box ul {
+            margin-left: 20px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        
+        .warning-box li {
+            margin-bottom: 5px;
+        }
+        
+        .btn-start {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-start:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .info-text {
+            color: #666;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Entry</h1>
+        <div class="assignment-title">{{ assignment.title }}</div>
+        
+        {% if not is_available %}
+        <div class="error-message">
+            This assignment is not available today. It will be available on {{ assignment.available_on }}.
+        </div>
+        {% endif %}
+        
+        {% if groups %}
+        <form id="entryForm" method="POST" action="#">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="group">Select Your Group:</label>
+                <select id="group" name="group" required {% if not is_available %}disabled{% endif %}>
+                    <option value="">-- Select a Group --</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="student_name">Enter Your Name:</label>
+                <input 
+                    type="text" 
+                    id="student_name" 
+                    name="student_name" 
+                    placeholder="Your full name"
+                    required
+                    {% if not is_available %}disabled{% endif %}
+                >
+            </div>
+            
+            <div class="warning-box">
+                <strong>⚠️ Fullscreen Mode Required</strong>
+                <ul>
+                    <li>You will be required to enter fullscreen mode to start the test</li>
+                    <li>Switching tabs or exiting fullscreen may be logged</li>
+                    <li>Please ensure you have a stable internet connection</li>
+                </ul>
+            </div>
+            
+            <button 
+                type="button" 
+                class="btn-start" 
+                id="startBtn"
+                {% if not is_available %}disabled{% endif %}
+                onclick="handleStartTest()"
+            >
+                Start Test
+            </button>
+            
+            <div class="info-text">
+                Duration: {{ assignment.duration }} minutes
+            </div>
+        </form>
+        {% else %}
+        <div class="error-message">
+            No groups are available for this assignment.
+        </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        function handleStartTest() {
+            const groupSelect = document.getElementById('group');
+            const studentName = document.getElementById('student_name');
+            
+            // Validate form
+            if (!groupSelect.value || !studentName.value.trim()) {
+                alert('Please select a group and enter your name.');
+                return;
+            }
+            
+            // Show fullscreen warning
+            const confirmed = confirm(
+                'You are about to start the test.\n\n' +
+                'IMPORTANT: You will be required to enter fullscreen mode.\n' +
+                'Switching tabs or exiting fullscreen may be logged and could affect your submission.\n\n' +
+                'Do you want to continue?'
+            );
+            
+            if (confirmed) {
+                // Request fullscreen using the browser's RequestFullscreen() method
+                requestFullscreen();
+            }
+        }
+        
+        function requestFullscreen() {
+            const element = document.documentElement;
+            
+            // Standard method - modern browsers
+            if (element.requestFullscreen) {
+                element.requestFullscreen()
+                    .then(() => {
+                        console.log('Fullscreen mode activated successfully');
+                        proceedToTest();
+                    })
+                    .catch((err) => {
+                        alert('Fullscreen mode is required to start the test. Please allow fullscreen access and try again.');
+                        console.error('Fullscreen error:', err);
+                    });
+            }
+            // WebKit browsers (Safari, older Chrome)
+            else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+                setTimeout(() => {
+                    console.log('Fullscreen mode activated (WebKit)');
+                    proceedToTest();
+                }, 100);
+            }
+            // Firefox
+            else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+                setTimeout(() => {
+                    console.log('Fullscreen mode activated (Firefox)');
+                    proceedToTest();
+                }, 100);
+            }
+            // IE/Edge (legacy)
+            else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+                setTimeout(() => {
+                    console.log('Fullscreen mode activated (IE/Edge)');
+                    proceedToTest();
+                }, 100);
+            }
+            else {
+                alert('Fullscreen mode is not supported in your browser. Please use a modern browser to take this test.');
+                console.error('Fullscreen API not supported');
+            }
+        }
+        
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement || 
+                                  document.webkitFullscreenElement || 
+                                  document.mozFullScreenElement || 
+                                  document.msFullscreenElement);
+            
+            if (!isFullscreen) {
+                console.warn('Fullscreen mode exited');
+                // You can add logic here to handle when user exits fullscreen
+            }
+        }
+        
+        function proceedToTest() {
+            // This will be handled in the next step
+            // For now, we'll just log the action
+            const groupId = document.getElementById('group').value;
+            const studentName = document.getElementById('student_name').value;
+            
+            console.log('Starting test:', {
+                assignment_uuid: '{{ assignment_uuid }}',
+                group_id: groupId,
+                student_name: studentName
+            });
+            
+            // TODO: Redirect to test page or submit form
+            alert('Test will start here. This functionality will be implemented in the next step.');
+        }
+    </script>
+</body>
+</html>
