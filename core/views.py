@@ -102,3 +102,61 @@ def quiz_questions(request, assignment_uuid):
     }
     
     return render(request, 'core/quiz_questions.html', context)
+
+
+def submit_quiz(request, assignment_uuid):
+    """
+    View to handle quiz submission.
+    Compares student answers with correct choices and calculates score.
+    """
+    assignment = get_object_or_404(Assignment, uuid=assignment_uuid)
+    submission_id = request.session.get('submission_id')
+    if not submission_id:
+        return render(request, 'core/error.html', {
+            'error_message': 'No active quiz session found. Please start the quiz from the entry page.'
+        }, status=403)
+
+    try:
+        submission = Submission.objects.get(id=submission_id, assignment=assignment)
+    except Submission.DoesNotExist:
+        return render(request, 'core/error.html', {
+            'error_message': 'Invalid quiz session. Please start the quiz again.'
+        }, status=403)
+
+    if submission.is_completed:
+        return render(request, 'core/error.html', {
+            'error_message': 'This quiz has already been completed.'
+        }, status=403)
+
+    if request.method != 'POST':
+        raise Http404("Invalid request method.")
+
+    questions = Question.objects.filter(assignment=assignment).prefetch_related('choices')
+    correct_choices = {
+        choice.question_id: choice.id
+        for choice in Choice.objects.filter(question__assignment=assignment, is_correct=True)
+    }
+
+    score = 0
+    total_questions = questions.count()
+
+    for question in questions:
+        submitted_choice_id = request.POST.get(f'question_{question.id}')
+        if submitted_choice_id and str(correct_choices.get(question.id)) == submitted_choice_id:
+            score += 1
+
+    submission.is_completed = True
+    submission.end_time = timezone.now()
+    submission.score = score
+    submission.total_questions = total_questions
+    submission.save(update_fields=['is_completed', 'end_time', 'score', 'total_questions'])
+
+    request.session.pop('submission_id', None)
+
+    context = {
+        'student_name': submission.student_name,
+        'score': score,
+        'total_questions': total_questions,
+    }
+
+    return render(request, 'core/quiz_results.html', context)

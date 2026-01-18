@@ -170,6 +170,10 @@ def log_violation(request, submission_id: int):
     POST endpoint to log tab switch/fullscreen exit violations.
     Increments tab_lock_violations in Submission model.
     """
+    session_submission_id = request.session.get('submission_id')
+    if session_submission_id:
+        submission_id = session_submission_id
+
     try:
         submission = Submission.objects.get(id=submission_id)
     except Submission.DoesNotExist:

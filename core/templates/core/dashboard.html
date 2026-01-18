@@ -165,6 +165,79 @@
         </div>
     </div>
 </div>
+
+<div class="card mt-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Submitted Assignments</h5>
+    </div>
+    <div class="card-body">
+        {% if submitted_assignments %}
+            <div class="accordion" id="submittedAssignmentsAccordion">
+                {% for assignment_entry in submitted_assignments %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="assignmentHeading{{ forloop.counter }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#assignmentCollapse{{ forloop.counter }}" aria-expanded="false" aria-controls="assignmentCollapse{{ forloop.counter }}">
+                            {{ assignment_entry.assignment.title }}
+                        </button>
+                    </h2>
+                    <div id="assignmentCollapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="assignmentHeading{{ forloop.counter }}" data-bs-parent="#submittedAssignmentsAccordion">
+                        <div class="accordion-body">
+                            {% if assignment_entry.groups %}
+                                <div class="accordion" id="groupAccordion{{ forloop.counter }}">
+                                    {% for group_entry in assignment_entry.groups %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="groupHeading{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#groupCollapse{{ forloop.parentloop.counter }}-{{ forloop.counter }}" aria-expanded="false" aria-controls="groupCollapse{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                                {{ group_entry.group.name }}
+                                            </button>
+                                        </h2>
+                                        <div id="groupCollapse{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="groupHeading{{ forloop.parentloop.counter }}-{{ forloop.counter }}" data-bs-parent="#groupAccordion{{ forloop.parentloop.counter }}">
+                                            <div class="accordion-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped align-middle mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Student Name</th>
+                                                                <th>Score</th>
+                                                                <th>Time Taken</th>
+                                                                <th>Security Violations</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for student_entry in group_entry.students %}
+                                                            <tr{% if student_entry.security_count > 0 %} class="table-warning"{% endif %}>
+                                                                <td>
+                                                                    {{ student_entry.submission.student_name }}
+                                                                    {% if student_entry.security_count > 0 %}
+                                                                    <i class="bi bi-exclamation-triangle-fill text-warning ms-1" title="Security violations logged"></i>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>{{ student_entry.submission.score }}/{{ student_entry.submission.total_questions }}</td>
+                                                                <td>{{ student_entry.time_taken }}</td>
+                                                                <td>{{ student_entry.security_count }}</td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted mb-0">No submitted groups yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No submitted assignments yet.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
