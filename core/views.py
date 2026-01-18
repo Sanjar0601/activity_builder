@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.http import JsonResponse, Http404
 from datetime import date, timedelta
@@ -47,6 +47,27 @@ def quiz_entry_view(request, assignment_uuid):
     # Get ALLOWED groups linked to this assignment
     groups = assignment.groups.all().order_by('name')
     
+    completed_submission_id = request.session.get('completed_submission_id')
+    if completed_submission_id:
+        completed_submission = Submission.objects.filter(
+            id=completed_submission_id,
+            assignment=assignment,
+            is_completed=True
+        ).first()
+        if completed_submission:
+            return redirect('leaderboard', assignment_uuid=assignment_uuid)
+
+    submission_id = request.session.get('submission_id')
+    if submission_id:
+        submission = Submission.objects.filter(
+            id=submission_id,
+            assignment=assignment,
+            is_completed=True
+        ).first()
+        if submission:
+            request.session['completed_submission_id'] = submission.id
+            return redirect('leaderboard', assignment_uuid=assignment_uuid)
+
     context = {
         'assignment': assignment,
         'groups': groups,

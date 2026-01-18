@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - {{ assignment.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 30px;
+        }
+        .podium-card {
+            border-radius: 12px;
+            border: 2px solid transparent;
+        }
+        .podium-1 {
+            border-color: #f5c542;
+            background: linear-gradient(180deg, #fff3cd 0%, #ffffff 100%);
+        }
+        .podium-2 {
+            border-color: #adb5bd;
+            background: linear-gradient(180deg, #e9ecef 0%, #ffffff 100%);
+        }
+        .podium-3 {
+            border-color: #d9480f;
+            background: linear-gradient(180deg, #ffe8cc 0%, #ffffff 100%);
+        }
+        .rank-badge {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <h1 class="mb-1"><i class="bi bi-trophy"></i> Leaderboard</h1>
+            <p class="text-muted mb-0">{{ assignment.title }}</p>
+        </div>
+
+        {% if leaderboard_entries %}
+            <div class="row g-3 mb-4">
+                {% for entry in leaderboard_entries|slice:":3" %}
+                <div class="col-md-4">
+                    <div class="card podium-card {% if entry.rank == 1 %}podium-1{% elif entry.rank == 2 %}podium-2{% else %}podium-3{% endif %}">
+                        <div class="card-body text-center">
+                            <div class="rank-badge mb-2">#{{ entry.rank }}</div>
+                            <h5 class="card-title mb-1">{{ entry.submission.student_name }}</h5>
+                            <p class="mb-0"><strong>{{ entry.submission.score }}</strong> pts</p>
+                            <small class="text-muted">{{ entry.time_taken_display }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student Name</th>
+                            <th>Score</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in leaderboard_entries %}
+                        <tr{% if entry.submission.id == current_submission_id %} class="table-primary"{% endif %}>
+                            <td>
+                                {{ entry.rank }}
+                                {% if entry.submission.id == current_submission_id %}
+                                <span class="badge bg-primary ms-2">YOUR RANK</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.submission.student_name }}</td>
+                            <td>{{ entry.submission.score }}</td>
+                            <td>{{ entry.time_taken_display }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                No submissions yet. Be the first to complete the quiz!
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

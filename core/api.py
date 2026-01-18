@@ -137,6 +137,19 @@ def start_quiz(request, assignment_uuid: str, data: QuizStartRequest):
             submission_id=0,
             message="Selected group is not allowed for this assignment."
         )
+
+    completed_submission_id = request.session.get('completed_submission_id')
+    if completed_submission_id:
+        completed_submission = Submission.objects.filter(
+            id=completed_submission_id,
+            assignment=assignment,
+            is_completed=True
+        ).first()
+        if completed_submission:
+            return QuizStartResponse(
+                submission_id=0,
+                message="This quiz has already been completed."
+            )
     
     # Create Submission record
     submission = Submission.objects.create(
